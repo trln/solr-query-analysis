@@ -3,36 +3,39 @@
 Contains some python scripts to make multiple queries against Solr, collect
 some statistics, and do some basic reporting on those statistics.  One 
 primary value of this is to view the relationship between the sorts of
-queries you make against your Solr instance and the affect that has on
+queries you make against your Solr instance and the effect that has on
 the performance of your Solr instance and also on the automatic generation
 of `BooleanClause`s, particularly by use of the `dismax` and `edismax`
 query parsers.  
 
-
-As of Solr 8.x, Solr typically enforces a 1024 boolean clause limit, so this can also help tune your settings.
+As of Solr 8.1,
+(https://issues.apache.org/jira/browse/SOLR-13336)[Solr
+typically enforces a 1024 boolean clause limit, even when those clauses are
+generated programatically by other parsers such as `edismax` or `dismax`], so
+this can also help tune your settings.
 
 ## Usage
 
-    $ pip install --user requirements.txt
+    $ pip install --user -r requirements.txt
 
 This will install the `requests` and `pandas` libraries; if you prefer, you 
 can use some other means of installing these so they're available to your 
 python interpreter.
 
-1. Run the queries and defaults from the 'author' directory against Solr 4
+1. Run the queries with default arguments:
 
     $ ./queries.py
 
 Will run a (somewhat) silly set of default queries against a Solr collection
-named `_default` running on `localhost`, and store the actual responses in the
-`json` subdirectory, and a CSV file in `results`.  See below for a breakdown of
-the contents of the CSV file.
+named `_default` running on `localhost`, and store the Solr JSON responses in
+the `json` subdirectory, and a CSV file in `results`.  See below for a
+breakdown of the contents of the CSV file.
 
 2. Run a custom set of queries against a specified Solr host and collection
 
     $ ./queries.py -c trlnbib -t author --query-dir author solr_4
 
-This loads `params.json` and `queries.txt` from the `author` subdirectory.  The
+This loads `params.json` and `queries.txt` from the `author` subdirectory (if they exist, which is true of the repository as shipped).  The
 former specifies the default parameters to use with each query, and the latter
 specifies, one per line, the values of the `q` Solr parameter to use in running
 the test.  Solr JSON responses and test results will be stored as above,
@@ -68,11 +71,16 @@ running on different hosts).  Your purposes may be different, so feel free to ch
 The range of arguments you can pass to the script is somewhat large, to provide
 a measure of flexibility in generating different test scenarios.  Run `./queries.py -h` to get a general breakdown.
 
-`-n` -- it is expected you may run the tests a number of times, so you can provide this to number your tests.  It defaults to 1.
+`-n` -- it is expected you may run the tests a number of times, so you can
+provide this to number your test runs.  It defaults to 1. Note that your Solr
+instance may be tuned to cache (parts of) query results, which can result in
+wide variations in observed timings and `QTime` values on subsequent runs of the same set of queries.
 
-`-c` -- the `collection` name to run queries against.  Not used if `-u` is specified, default value: `default`.
+`-c` -- the `collection` name to run queries against.  Not used if `-u` (`--url`) is specified, default value: `_default`.
 
-`--query-dir` - a directory to be scanned for `queries.txt` and `params.json` files. These files are used as the value of `--query-file` and `--default-query` if present.  Either or both can be overriden by the explict use of their companion argument.
+`--query-dir` - a directory to be scanned for `queries.txt` and `params.json`
+files. These files are used as the value of `--query-file` and
+`--default-query` _if present_.  Either or both can be overriden by the explict use of their companion argument.
 
 `--query-file` - a file containing the `q` parameter of the queries to be run aspart of the test, one per line.
 
@@ -83,23 +91,28 @@ want to specify for each query that's run, e.g. `{ "fq":
 
 The special parameter `:_prefix` can be added to this file to add a prefix to
 each query, which is especially useful for long and complex `edismax` and
-`dismax` queries, e.g.  `{ ":_prefix": "{!edismax
-qf=$my_qf_defined_in_solrconfig_defaults}"}` will add the value at the
-beginning of the queries in `queries.txt` (or the default queries, if you don't
-have a `queries.txt`).  Other than prepending to the `q` parameter, this
-attribute will not be passed to Solr, however.
+`dismax` queries of the form used in Blacklight configurations, e.g.  `{
+":_prefix": "{!edismax qf=$my_qf_defined_in_solrconfig_defaults}"}` will add
+the value at the beginning of the queries in `queries.txt` (or the default
+queries, if you don't have a `queries.txt`).  Other than prepending to the `q`
+parameter, this attribute will not be passed to Solr, however.
 
-Since `debug=true` is essential, it is automatically added to the default
-parameters
+Since `debug=true` is essential to the analysis of boolean query generation, it
+is automatically added to the default parameters.
 
-`-u` - specify the _complete_ URL to use for queries, including the path to the
-query handler you want to use. Mostly useful when you're using `https` or some
-port other than `8983`; overrides any value provided for `host` and
-`collection`. Example:
-`https://my-solr-behind-a-proxy.edu/solr/myneatcollection/select`
-The value of `host` in the output will be derived from this parameter (`urllib.urlparse.parse(url).netloc`) if its set.
+`-u` or `--url` - specify the _complete_ URL to use for queries, including the
+path to the query handler you want to use. Mostly useful when you're using
+`https` or some port other than `8983`; overrides any value provided for `host`
+and `collection`. 
 
-The final positional parameter passed to the program is the hostname.  Unless `-u` is set, the URL to be used for queries will be the pattern `http://{hostname}:8983/solr/{collection}/select`
+Example: `https://my-solr-behind-a-proxy.edu/solr/myneatcollection/select`
+
+The value of `host` in the output will be derived from this parameter
+(`urllib.urlparse.parse(url).netloc`) if it's set.
+
+The final positional parameter passed to the program is the hostname.  Unless
+`-u` is set, the URL to be used for queries will follow the pattern
+`http://{hostname}:8983/solr/{collection}/select`
 
 ## CSV Filenames
 
@@ -119,4 +132,3 @@ generate some simple output that lets you quickly see how query length affects
 the number of boolean clauses generated, as well as performance.  Otherwise,
 feel free to regard it as something you can build your own more complex 
 analyses from.
-

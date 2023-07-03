@@ -1,0 +1,6 @@
+
+{
+    "rows": 0,
+    "defType": "lucene",
+    ":_prefix": "{!edismax qf=$isbn_issn_qf pf='' pf3='' pf2=''}"
+}

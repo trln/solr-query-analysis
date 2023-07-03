@@ -1,0 +1,6 @@
+
+{
+    "rows": 0,
+    "defType": "lucene",
+    ":_prefix": "{!edismax qf=$subject_qf pf=$subject_pf pf3=$subject_pf3 pf2=$subject_pf2}"
+}

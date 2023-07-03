@@ -1,0 +1,5 @@
+{
+    "rows": 0,
+    "defType": "lucene",
+    ":_prefix": "{!edismax qf=$title_qf pf=$title_pf pf3=$title_pf3 pf2=$title_pf2}"
+}
